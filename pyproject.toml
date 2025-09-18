@@ -70,7 +70,7 @@ dependencies = [
     "av>=14.2.0",
     "jsonlines>=4.0.0",
     "packaging>=24.2",
-    "pynput>=1.7.7",
+    "pynput>=1.6.0",
     "pyserial>=3.5",
     "wandb>=0.20.0",
 
