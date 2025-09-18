@@ -656,7 +656,9 @@ class LeRobotDataset(torch.utils.data.Dataset):
             )
             for key, delta_idx in self.delta_indices.items()
         }
-        return query_indices, padding
+        seq_end_idx = query_indices[list(self.delta_indices.keys())[0]][-1]
+        goal_idx = np.random.randint(seq_end_idx, ep_end.item())
+        return query_indices, padding, goal_idx
 
     def _get_query_timestamps(
         self,
@@ -708,7 +710,7 @@ class LeRobotDataset(torch.utils.data.Dataset):
 
         query_indices = None
         if self.delta_indices is not None:
-            query_indices, padding = self._get_query_indices(idx, ep_idx)
+            query_indices, padding, goal_idx = self._get_query_indices(idx, ep_idx)
             query_result = self._query_hf_dataset(query_indices)
             item = {**item, **padding}
             for key, val in query_result.items():
@@ -718,7 +720,14 @@ class LeRobotDataset(torch.utils.data.Dataset):
             current_ts = item["timestamp"].item()
             query_timestamps = self._get_query_timestamps(current_ts, query_indices)
             video_frames = self._query_videos(query_timestamps, ep_idx)
-            item = {**video_frames, **item}
+            goal_item = self.hf_dataset[goal_idx]
+            goal_timestamps = self._get_query_timestamps(goal_item["timestamp"].item(), query_indices)
+            goal_video_frames = self._query_videos(goal_timestamps, ep_idx)
+            for key in self.meta.video_keys:
+                goal_key = f"{key}_goal"
+                goal_video_frames[goal_key] = goal_video_frames[key]
+                del goal_video_frames[key]
+            item = {**video_frames, **goal_video_frames, **item}
 
         if self.image_transforms is not None:
             image_keys = self.meta.camera_keys

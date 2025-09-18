@@ -80,6 +80,8 @@ def create_stats_buffers(
 
         # TODO(aliberts, rcadene): harmonize this to only use one framework (np or torch)
         if stats:
+            if key.endswith("_goal"):
+                continue
             if isinstance(stats[key]["mean"], np.ndarray):
                 if norm_mode is NormalizationMode.MEAN_STD:
                     buffer["mean"].data = torch.from_numpy(stats[key]["mean"]).to(dtype=torch.float32)
@@ -103,6 +105,8 @@ def create_stats_buffers(
                 raise ValueError(f"np.ndarray or torch.Tensor expected, but type is '{type_}' instead.")
 
         stats_buffers[key] = buffer
+        if "images" in key:
+            stats_buffers[f"{key}_goal"] = buffer
     return stats_buffers
 
 

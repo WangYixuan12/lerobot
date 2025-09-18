@@ -420,6 +420,7 @@ class ACT(nn.Module):
             batch_size = batch["observation.environment_state"].shape[0]
 
         # Prepare the latent for input to the transformer encoder.
+        device = next(iter(self.parameters())).device
         if self.config.use_vae and "action" in batch and self.training:
             # Prepare the input to the VAE encoder: [cls, *joint_space_configuration, *action_sequence].
             cls_embed = einops.repeat(
@@ -446,7 +447,7 @@ class ACT(nn.Module):
             cls_joint_is_pad = torch.full(
                 (batch_size, 2 if self.config.robot_state_feature else 1),
                 False,
-                device=batch["observation.state"].device,
+                device=device,
             )
             key_padding_mask = torch.cat(
                 [cls_joint_is_pad, batch["action_is_pad"]], axis=1
@@ -470,7 +471,7 @@ class ACT(nn.Module):
             mu = log_sigma_x2 = None
             # TODO(rcadene, alexander-soare): remove call to `.to` to speedup forward ; precompute and use buffer
             latent_sample = torch.zeros([batch_size, self.config.latent_dim], dtype=torch.float32).to(
-                batch["observation.state"].device
+                device
             )
 
         # Prepare transformer encoder inputs.
